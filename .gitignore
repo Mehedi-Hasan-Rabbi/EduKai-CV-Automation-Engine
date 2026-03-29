@@ -216,6 +216,8 @@ tmp/
 # ==============================
 *.env
 docker-compose.override.yml
+!Backend/.env.example
+!AI/.env.example
 
 # ==============================
 # IDE
