@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm 2cm;
+        }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; line-height: 1.4; color: #000; }
+        .header { text-align: center; margin-bottom: 5px; }
+        .logo { width: 180px; margin-bottom: 10px; }
+        .name { font-size: 24pt; font-weight: bold; margin-bottom: 2px; }
+        .role { font-size: 12pt; margin-bottom: 2px; }
+        .contact-line { font-size: 10pt; margin-top: 5px; }
+        .divider { border: 0; height: 2px; background-color: #e67e22; margin: 10px 0 20px 0; }
+        h2 { font-size: 13pt; font-weight: bold; border-bottom: 1px solid #ccc; margin-top: 15px; margin-bottom: 8px; }
+        p { margin-bottom: 10px; text-align: justify; }
+        .job-entry { margin-bottom: 15px; page-break-inside: avoid; }
+        .job-header { width: 100%; margin-bottom: 5px; border-bottom: 1px dotted #ddd; padding-bottom: 2px; }
+        .job-company-role { font-weight: bold; font-size: 11pt; display: inline-block; width: 75%; }
+        .job-date { float: right; font-weight: bold; font-style: italic; color: #444; width: 20%; text-align: right; }
+        ul { margin-top: 5px; padding-left: 18px; }
+        li { margin-bottom: 3px; padding-left: 5px; }
+        .footer { margin-top: 30px; font-weight: bold; font-size: 10pt; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        {% if logo_path %}<img src="{{ logo_path }}" class="logo" alt="Edukai Logo">{% endif %}
+        <div class="name">{{ cv.name }}</div>
+        <div class="role">{{ cv.role }}</div>
+        <div class="role">Location: {{ cv.location }}</div>
+        <div class="contact-line">Contact: kai.smith@edukai.co.uk / 0203 987 9981 / 07542 870 343</div>
+    </div>
+    <hr class="divider">
+    <h2>Professional Profile</h2>
+    <p>{{ cv.professional_profile }}</p>
+    <h2>Employment History</h2>
+    {% for job in cv.employment_history %}
+    <div class="job-entry">
+        <div class="job-header">
+            <span class="job-company-role">{{ job.company }} | <span style="color:#444;">{{ job.role }}</span></span>
+            <span class="job-date">{{ job.date_range }}</span>
+        </div>
+        <ul>{% for task in job.responsibilities %}<li>{{ task }}</li>{% endfor %}</ul>
+    </div>
+    {% endfor %}
+    {% if cv.qualifications %}
+    <h2>Education & Qualifications</h2>
+    <ul>{% for qual in cv.qualifications %}<li>{{ qual }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if cv.interests %}
+    <h2>Interests</h2>
+    <p>{{ cv.interests }}</p>
+    {% endif %}
+    <div class="footer">References available upon request</div>
+</body>
+</html>

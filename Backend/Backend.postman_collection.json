@@ -1,0 +1,1264 @@
+{
+  "info": {
+    "_postman_id": "b16bde23-fe19-4848-8eb7-6e007e9d552e",
+    "name": "Backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "46248303",
+    "_collection_link": "https://go.postman.co/collection/46248303-b16bde23-fe19-4848-8eb7-6e007e9d552e?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Login, Logout, Register",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "// Superuser Local\r\n{\r\n  \"email\": \"mehedi.saiyajin@gmail.com\",\r\n  \"password\": \"mehedi@1802052\"\r\n}\r\n\r\n// SuperUser server\r\n// {\r\n//   \"email\": \"admin@test.com\",\r\n//   \"password\": \"admin@1234\"\r\n// }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/auth/login/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{local_BaseURL}}/api/auth/logout/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/auth/token/refresh/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "token",
+                "refresh",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register New User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"mehedi.saiyajin1234@gmail.com\",\r\n  \"first_name\": \"Mehedi\",\r\n  \"last_name\": \"Hasan\",\r\n  \"gender\": \"male\",\r\n  \"country\": \"Bangladesh\",\r\n//   \"profile_pic\": \"http://example.com\",\r\n  \"password\": \"mehedi@1802052\",\r\n  \"password_confirm\": \"mehedi@1802052\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/auth/register/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register",
+                ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "User Profile",
+      "item": [
+        {
+          "name": "Logged in User Profile Info",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_BaseURL}}/api/auth/me/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logged in User Profile Update",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "profile_pic",
+                  "type": "file",
+                  "uuid": "2270d94b-baed-4663-9c33-93221dcc2b83",
+                  "src": "/C:/Users/Morning Shift/Pictures/Screenshots/Screenshot (1).png"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/auth/profile/update/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile",
+                "update",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logged in User password update",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"old_password\": \"1234\",\r\n  \"new_password\": \"okia@1234\",\r\n  \"new_password_confirm\": \"okia@1234\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/auth/password/update/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "password",
+                "update",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_BaseURL}}/api/auth/dashboard/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "dashboard",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get all recent activity",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_BaseURL}}/api/auth/activity/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "activity",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "unread",
+                  "value": "true",
+                  "description": "true, false",
+                  "disabled": true
+                },
+                {
+                  "key": "severity",
+                  "value": "error",
+                  "description": "error, info",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark all as read",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{local_BaseURL}}/api/auth/activity/mark-read/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "activity",
+                "mark-read",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Activity By ID",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \r\n    \"ids\": [\r\n        \"ea3ffd60-bc04-483f-8913-f523f8e83a3c\"\r\n    ] \r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/auth/activity/mark-read/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "activity",
+                "mark-read",
+                ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Forgot/Reset Password",
+      "item": [
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"mehedi.saiyajin@gmail.com\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/auth/forgot-password/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "forgot-password",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"mehedi.saiyajin@gmail.com\",\r\n  \"otp\": \"148083\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/auth/verify-otp/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-otp",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"mehedi.saiyajin@gmail.com\",\r\n  \"new_password\": \"mehedi@1802052\",\r\n  \"new_password_confirm\": \"mehedi@1802052\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/auth/reset-password/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "reset-password",
+                ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "CV/Resume Upload/Candidate",
+      "item": [
+        {
+          "name": "Local CV Bulk Upload",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "experience",
+                  "value": "3.0",
+                  "type": "text",
+                  "uuid": "44401d47-dc29-4d92-8b79-ff7534a24761"
+                },
+                {
+                  "key": "skills",
+                  "value": "[\"math\", \"physics\"]",
+                  "type": "text",
+                  "uuid": "6fbfcb14-6257-4c81-bc73-54bfa3ab0453"
+                },
+                {
+                  "key": "job_role",
+                  "value": " [\"math teacher\"]",
+                  "type": "text",
+                  "uuid": "9a4d2285-85b6-418e-9006-5b1b17df8c9b"
+                },
+                {
+                  "key": "files ",
+                  "type": "file",
+                  "uuid": "f6745a09-9c34-479e-b2d4-916edb0efce2",
+                  "src": "/D:/Mehedi_Hasan/EduKai-CV-Automation-Engine/Backend/Demo Data/Demo CV/CV_1_London.pdf"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/candidates/upload/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "candidates",
+                "upload",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List of all candidates",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer"
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "// Superuser\r\n{\r\n  \"email\": \"mehedi.saiyan@gmail.com\",\r\n  \"password\": \"mehedi@1802052\"\r\n}"
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/candidates/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "candidates",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Candidate Details By ID",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/candidates/{{candidate_id}}/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "candidates",
+                "{{candidate_id}}",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Candidate Profile Update",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "profile_photo",
+                  "type": "file",
+                  "uuid": "14a4ddd4-1aa6-45a7-870d-8b8b7e24f3fd",
+                  "src": "/C:/Users/Morning Shift/Pictures/Screenshots/Screenshot 2026-03-17 114212.png"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/candidates/{{candidate_id}}/update/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "candidates",
+                "{{candidate_id}}",
+                "update",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Candidate By ID",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{local_BaseURL}}/api/candidates/{{candidate_id}}/delete/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "candidates",
+                "{{candidate_id}}",
+                "delete",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Batches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_BaseURL}}/api/candidates/batches/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "candidates",
+                "batches",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Batch Info by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_BaseURL}}/api/candidates/batches/{{batch_id}}/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "candidates",
+                "batches",
+                "{{batch_id}}",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a batch and all its candidate + MinIO files",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{local_BaseURL}}/api/candidates/batches/{{batch_id}}/delete/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "candidates",
+                "batches",
+                "{{batch_id}}",
+                "delete",
+                ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Organization and Contacts",
+      "item": [
+        {
+          "name": "Get All organization",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_BaseURL}}/api/organizations/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "organizations",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create New Organization",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"urn\": \"1109\",\r\n  \"name\": \"Wingfield Primary School\",\r\n  \"local_authority\": \"Greenwich\",\r\n  \"phase\": \"primary\",\r\n  \"gender\": \"mixed\",\r\n  \"telephone\": \"2088565298\",\r\n  \"street\": \"Ensign Street\",\r\n  \"address_line_1\": \"\",\r\n  \"address_line_2\": \"\",\r\n  \"town\": \"London\",\r\n  \"county\": \"\",\r\n  \"postcode\": \"SE3 9GJ\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/organizations/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "organizations",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Organization By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_BaseURL}}/api/organizations/{{org_id}}/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "organizations",
+                "{{org_id}}",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Edit Organization",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"urn\": \"1109\",\r\n  \"name\": \"Wingfield Primary School\",\r\n  \"local_authority\": \"Greenwich\",\r\n  \"phase\": \"primary\",\r\n  \"gender\": \"both\",\r\n  \"telephone\": \"2088565298\",\r\n  \"street\": \"Ensign Street\",\r\n  \"address_line_1\": \"\",\r\n  \"address_line_2\": \"\",\r\n  \"town\": \"London\",\r\n  \"county\": \"\",\r\n  \"postcode\": \"SE2 9PD\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/organizations/{{org_id}}/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "organizations",
+                "{{org_id}}",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Organization by ID",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"urn\": \"1109\",\r\n  \"name\": \"Wingfield Primary School\",\r\n  \"local_authority\": \"Greenwich\",\r\n  \"phase\": \"primary\",\r\n  \"gender\": \"both\",\r\n  \"telephone\": \"2088565298\",\r\n  \"street\": \"Ensign Street\",\r\n  \"address_line_1\": \"\",\r\n  \"address_line_2\": \"\",\r\n  \"town\": \"London\",\r\n  \"county\": \"\",\r\n  \"postcode\": \"SE2 9PD\"\r\n}"
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/organizations/{{org_id}}/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "organizations",
+                "{{org_id}}",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get all Contact from all Organization",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_BaseURL}}/api/organizations/contacts/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "organizations",
+                "contacts",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List contacts for an organization",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"urn\": \"1109\",\r\n  \"name\": \"Wingfield Primary School\",\r\n  \"local_authority\": \"Greenwich\",\r\n  \"phase\": \"primary\",\r\n  \"gender\": \"both\",\r\n  \"telephone\": \"2088565298\",\r\n  \"street\": \"Ensign Street\",\r\n  \"address_line_1\": \"\",\r\n  \"address_line_2\": \"\",\r\n  \"town\": \"London\",\r\n  \"county\": \"\",\r\n  \"postcode\": \"SE3 9GJ\"\r\n}"
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/organizations/{{org_id}}/contacts/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "organizations",
+                "{{org_id}}",
+                "contacts",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Contacts under Organization",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"contact_person\": \"Mehdi Hasan\",\r\n  \"job_title\": \"Math teacher\",\r\n  \"work_email\": \"mehedi.saiyan@gmail.com\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/organizations/{{org_id}}/contacts/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "organizations",
+                "{{org_id}}",
+                "contacts",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Info about contact",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"contact_person\": \"Mehdi Hasan\",\r\n  \"job_title\": \"Math teacher\",\r\n  \"work_email\": \"mehedi.saiyan@gmail.com\"\r\n}"
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/organizations/contacts/{{contact_id}}/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "organizations",
+                "contacts",
+                "{{contact_id}}",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Edit Contact information",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"contact_person\": \"Mehdi Hasan\",\r\n  \"job_title\": \"Programming teacher\",\r\n  \"work_email\": \"mehedi.saiyan@gmail.com\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/organizations/contacts/{{contact_id}}/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "organizations",
+                "contacts",
+                "{{contact_id}}",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Contact by ID",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{local_BaseURL}}/api/organizations/contacts/{{contact_id}}/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "organizations",
+                "contacts",
+                "{{contact_id}}",
+                ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Organization and contacts excel sheet upload",
+      "item": [
+        {
+          "name": "Organization Import",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "uuid": "85cf9831-079a-4abd-8e95-2bc4f5abdc31",
+                  "src": "/C:/Users/Morning Shift/Desktop/Organizations.xlsx"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/organizations/import/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "organizations",
+                "import",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Contacts Import",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "uuid": "85cf9831-079a-4abd-8e95-2bc4f5abdc31",
+                  "src": "/C:/Users/Morning Shift/Desktop/Contacts.xlsx"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/organizations/import/contacts/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "organizations",
+                "import",
+                "contacts",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Import Status",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "uuid": "85cf9831-079a-4abd-8e95-2bc4f5abdc31",
+                  "src": "/C:/Users/Morning Shift/Desktop/Contacts.xlsx"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/organizations/import/status/a5ffe27b-1946-454e-9710-84609ffdb17b/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "organizations",
+                "import",
+                "status",
+                "a5ffe27b-1946-454e-9710-84609ffdb17b",
+                ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "CV Rewrite/Organization Filter/Contacts Email send",
+      "item": [
+        {
+          "name": "Rewrite Candidate CV with AI",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{local_BaseURL}}/api/candidates/{{candidate_id}}/rewrite/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "candidates",
+                "{{candidate_id}}",
+                "rewrite",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AI Rewrite Status",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/candidates/{{candidate_id}}/rewrite/status/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "candidates",
+                "{{candidate_id}}",
+                "rewrite",
+                "status",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Organization filter",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "experience",
+                  "value": "2.0",
+                  "type": "text",
+                  "uuid": "44401d47-dc29-4d92-8b79-ff7534a24761"
+                },
+                {
+                  "key": "skills",
+                  "value": "[\"math\", \"physics\"]",
+                  "type": "text",
+                  "uuid": "6fbfcb14-6257-4c81-bc73-54bfa3ab0453"
+                },
+                {
+                  "key": "job_role",
+                  "value": " [\"math teacher\"]",
+                  "type": "text",
+                  "uuid": "9a4d2285-85b6-418e-9006-5b1b17df8c9b"
+                },
+                {
+                  "key": "files ",
+                  "type": "file",
+                  "uuid": "f6745a09-9c34-479e-b2d4-916edb0efce2",
+                  "src": "///wsl.localhost/Ubuntu/home/mehedi_hasan/Ultr4_Instinct/EduKai-CV-Automation-Engine/backend/.Client Resources/Demo CV/CV_1_London.pdf"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/candidates/{{candidate_id}}/nearby-organizations/?radius_km=2",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "candidates",
+                "{{candidate_id}}",
+                "nearby-organizations",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "radius_km",
+                  "value": "2"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Contacts Filter",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "uuid": "85cf9831-079a-4abd-8e95-2bc4f5abdc31",
+                  "src": "/C:/Users/Morning Shift/Desktop/Contacts.xlsx"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/candidates/{{candidate_id}}/nearby-contacts/?radius_km=4",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "candidates",
+                "{{candidate_id}}",
+                "nearby-contacts",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "radius_km",
+                  "value": "4"
+                },
+                {
+                  "key": "phase",
+                  "value": null,
+                  "disabled": true
+                },
+                {
+                  "key": "town",
+                  "value": null,
+                  "disabled": true
+                },
+                {
+                  "key": "job_title",
+                  "value": "HOD Humanities",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send emails to contacts",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"contact_ids\": [\r\n       \"b387a0bc-11ce-48b6-9d57-19ebbb43199c\"\r\n    ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_BaseURL}}/api/candidates/{{candidate_id}}/send-to-contacts/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "candidates",
+                "{{candidate_id}}",
+                "send-to-contacts",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Poll result for email",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_BaseURL}}/api/candidates/send-status/46ce37fd-32ff-4c71-ab71-e68e269ec723/",
+              "host": [
+                "{{local_BaseURL}}"
+              ],
+              "path": [
+                "api",
+                "candidates",
+                "send-status",
+                "46ce37fd-32ff-4c71-ab71-e68e269ec723",
+                ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

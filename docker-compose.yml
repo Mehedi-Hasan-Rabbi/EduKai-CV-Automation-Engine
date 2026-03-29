@@ -1,0 +1,227 @@
+services:
+
+  # ─────────────────────────────────────────
+  # Infrastructure
+  # ─────────────────────────────────────────
+
+  redis:
+    image: redis:7-alpine
+    container_name: edukai_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"           # expose for local debugging; remove in prod
+    volumes:
+      - redis_data:/data
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: edukai_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: edukai_db
+      POSTGRES_USER: edukai_user
+      POSTGRES_PASSWORD: strongpassword
+    ports:
+      - "5431:5432"           # expose for local debugging with pgAdmin etc.
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio
+    container_name: edukai_minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    command: server data --console-address ":9001"
+
+  # ─────────────────────────────────────────
+  # AI Service
+  # ─────────────────────────────────────────
+
+  ai:
+    build:
+      context: ./AI
+      dockerfile: Dockerfile
+    container_name: edukai_ai
+    restart: unless-stopped
+    depends_on:
+      - redis
+    environment:
+      REDIS_URL: redis://redis:6379/3
+      APP_BASE_URL: http://ai:8080/
+      # OPENAI_API_KEY: set in your .env file or pass here
+    env_file:
+      - ./AI/.env
+    ports:
+      - "8080:8080"
+    volumes:
+      - ai_static:/app/app/static
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8080
+
+  ai_worker:
+    build:
+      context: ./AI
+      dockerfile: Dockerfile
+    container_name: edukai_ai_worker
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - ai
+    environment:
+      REDIS_URL: redis://redis:6379/3
+      APP_BASE_URL: http://ai:8080/
+    env_file:
+      - ./AI/.env
+    volumes:
+      - ai_static:/app/app/static
+    command: celery -A app.core.celery_app worker --loglevel=info
+
+  # ─────────────────────────────────────────
+  # Backend
+  # ─────────────────────────────────────────
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: edukai_backend
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - postgres
+      - minio
+      - ai
+    environment:
+      DATABASE_URL: postgres://edukai_user:strongpassword@postgres:5432/edukai_db
+      REDIS_URL: redis://redis:6379/1
+      CELERY_BROKER_URL: redis://redis:6379/2
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      MINIO_ENDPOINT_URL: http://minio:9000       # internal: backend → minio
+      MINIO_PUBLIC_URL: http://localhost:9000      # external: browser → minio (change to VPS IP in prod)
+      MINIO_INTERNAL_URL: http://minio:9000
+      AI_BASE_URL: http://ai:8080
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_media:/app/media
+      - backend_static:/app/staticfiles
+      - import_tmp:/tmp/imports
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  celery_default:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: edukai_celery_default
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - redis
+      - postgres
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgres://edukai_user:strongpassword@postgres:5432/edukai_db
+      REDIS_URL: redis://redis:6379/1
+      CELERY_BROKER_URL: redis://redis:6379/2
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      MINIO_ENDPOINT_URL: http://minio:9000
+      MINIO_PUBLIC_URL: http://localhost:9000    # ← keep for browser URLs
+      MINIO_INTERNAL_URL: http://minio:9000      # ← new: for AI worker URLs
+      AI_BASE_URL: http://ai:8080
+    volumes:
+      - backend_media:/app/media
+      - import_tmp:/tmp/imports
+    command: celery -A edukai worker --queues=default --concurrency=4 --loglevel=info --hostname=default@%h
+
+  celery_pdf:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: edukai_celery_pdf
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - redis
+      - postgres
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgres://edukai_user:strongpassword@postgres:5432/edukai_db
+      REDIS_URL: redis://redis:6379/1
+      CELERY_BROKER_URL: redis://redis:6379/2
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      MINIO_ENDPOINT_URL: http://minio:9000
+      MINIO_PUBLIC_URL: http://localhost:9000
+      MINIO_INTERNAL_URL: http://minio:9000
+      AI_BASE_URL: http://ai:8080
+    volumes:
+      - backend_media:/app/media
+    command: celery -A edukai worker --queues=pdf --concurrency=2 --loglevel=info --hostname=pdf@%h
+
+  celery_polling:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: edukai_celery_polling
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - redis
+      - postgres
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgres://edukai_user:strongpassword@postgres:5432/edukai_db
+      REDIS_URL: redis://redis:6379/1
+      CELERY_BROKER_URL: redis://redis:6379/2
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      MINIO_ENDPOINT_URL: http://minio:9000
+      MINIO_PUBLIC_URL: http://localhost:9000
+      MINIO_INTERNAL_URL: http://minio:9000
+      AI_BASE_URL: http://ai:8080
+    volumes:
+      - backend_media:/app/media
+    command: celery -A edukai worker --queues=polling --concurrency=4 --loglevel=info --hostname=polling@%h
+
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: edukai_celery_beat
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - redis
+      - postgres
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgres://edukai_user:strongpassword@postgres:5432/edukai_db
+      REDIS_URL: redis://redis:6379/1
+      CELERY_BROKER_URL: redis://redis:6379/2
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    command: celery -A edukai beat --loglevel=info
+
+# ─────────────────────────────────────────
+# Volumes
+# ─────────────────────────────────────────
+volumes:
+  redis_data:
+  postgres_data:
+  minio_data:
+  ai_static:
+  backend_media:
+  backend_static:
+  import_tmp:

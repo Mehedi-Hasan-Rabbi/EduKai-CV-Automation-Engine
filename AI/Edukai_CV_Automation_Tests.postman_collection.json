@@ -1,0 +1,344 @@
+{
+	"info": {
+		"_postman_id": "eded0dbd-f819-4df3-aaaf-19a05df8cc7a",
+		"name": "Edukai CV Automation Tests",
+		"description": "Test collection for the Edukai CV Generation FastAPI project.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "37827227"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Service is healthy\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.status).to.eql(\"healthy\");",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{global}}/health",
+					"host": [
+						"{{global}}"
+					],
+					"path": [
+						"health"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CV submit",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response time is acceptable\", function () {",
+							"    // AI + PDF generation takes time, allow up to 30s",
+							"    pm.expect(pm.response.responseTime).to.be.below(30000);",
+							"});",
+							"",
+							"pm.test(\"Validate Response Structure\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    ",
+							"    // Check fields",
+							"    pm.expect(jsonData).to.have.property(\"status\");",
+							"    pm.expect(jsonData.status).to.eql(\"success\");",
+							"    ",
+							"    pm.expect(jsonData).to.have.property(\"candidate_name\");",
+							"    pm.expect(jsonData.candidate_name).to.be.a('string');",
+							"    ",
+							"    pm.expect(jsonData).to.have.property(\"email_draft\");",
+							"    pm.expect(jsonData.email_draft).to.be.a('string');",
+							"    ",
+							"    pm.expect(jsonData).to.have.property(\"pdf_base64\");",
+							"    pm.expect(jsonData.pdf_base64).to.be.a('string');",
+							"    ",
+							"    // Simple check to ensure base64 isn't empty",
+							"    pm.expect(jsonData.pdf_base64.length).to.be.above(100);",
+							"});",
+							"",
+							"// Optional: Log the email to console for manual inspection",
+							"var jsonData = pm.response.json();",
+							"if(jsonData.email_draft) {",
+							"    console.log(\"Generated Email:\", jsonData.email_draft);",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": 1,\n    \"cv_url\": \"https://ik.imagekit.io/7kxbibfsn/Raymond%20Lindo.pdf?updatedAt=1771228869972\",\n    \"additional_info\": {\n        \"experience\": 2.0,\n        \"skills\": [\n            \"math\",\n            \"physics\"\n        ],\n        \"job_role\": [\n            \"math teacher\"\n        ],\n        \"current_location\": \"dhaka\"\n    }\n}"
+				},
+				"url": {
+					"raw": "{{global}}/api/v1/regeneration",
+					"host": [
+						"{{global}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"regeneration"
+					]
+				},
+				"description": "Main endpoint to process the CV. \n\n**NOTE:** Replace `cv_url` with a valid, accessible PDF URL. The dummy URL provided is just a placeholder."
+			},
+			"response": [
+				{
+					"name": "CV submit",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": 1,\n    \"cv_url\": \"https://ik.imagekit.io/7kxbibfsn/Raymond%20Lindo.pdf?updatedAt=1771228869972\",\n    \"additional_info\": {\n        \"experience\": 2.0,\n        \"skills\": [\n            \"math\",\n            \"physics\"\n        ],\n        \"job_role\": [\n            \"math teacher\"\n        ],\n        \"current_location\": \"London\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{local}}/api/v1/regeneration",
+							"host": [
+								"{{local}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"regeneration"
+							]
+						}
+					},
+					"status": "Accepted",
+					"code": 202,
+					"_postman_previewlanguage": null,
+					"header": [
+						{
+							"key": "date",
+							"value": "Thu, 26 Feb 2026 05:30:28 GMT"
+						},
+						{
+							"key": "server",
+							"value": "uvicorn"
+						},
+						{
+							"key": "content-length",
+							"value": "147"
+						},
+						{
+							"key": "content-type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"status\": \"processing\",\n    \"task_id\": \"0ca424d9-dbbf-416c-82a7-1ed67b33d42b\",\n    \"message\": \"CV queued for regeneration. Poll /tasks/{task_id} for results.\"\n}"
+				}
+			]
+		},
+		{
+			"name": "CV regenerate",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 422 (Unprocessable Entity)\", function () {",
+							"    pm.response.to.have.status(422);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{global}}/api/v1/tasks/{{task_id}}",
+					"host": [
+						"{{global}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"tasks",
+						"{{task_id}}"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "CV regenerate",
+					"originalRequest": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{local}}/api/v1/tasks/{{task_id}}",
+							"host": [
+								"{{local}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tasks",
+								"{{task_id}}"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": null,
+					"header": [
+						{
+							"key": "date",
+							"value": "Thu, 26 Feb 2026 05:30:44 GMT"
+						},
+						{
+							"key": "server",
+							"value": "uvicorn"
+						},
+						{
+							"key": "content-length",
+							"value": "5007"
+						},
+						{
+							"key": "content-type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"status\": \"completed\",\n    \"result\": {\n        \"status\": \"success\",\n        \"message\": \"CV analysis completed.\",\n        \"quality_check\": \"pass\",\n        \"data_extracted\": {\n            \"name\": \"Raymond\",\n            \"role\": \"Math Teacher\",\n            \"location\": \"London\",\n            \"availability\": \"Immediate\",\n            \"professional_profile\": \"Accomplished and dedicated Education Professional with over 30 years of comprehensive experience in social care and educational settings. Adept at fostering an inclusive and engaging learning environment, I have a proven record of working effectively with students aged 8-18, including those with diverse learning needs such as SEMH, ASD, and ADHD. My strength lies in building rapport through empathetic communication and supporting positive behavioral and academic development. I am seeking a math teaching position to contribute to educational excellence and inspire students to achieve their full potential through innovative pedagogical approaches.\",\n            \"employment_history\": [\n                {\n                    \"date_range\": \"2021 - PRESENT\",\n                    \"role\": \"Cover Supervisor / HLTA / Mentor\",\n                    \"company\": \"Lunatus Education\",\n                    \"responsibilities\": [\n                        \"Delivering lesson coverage for absent teachers, ensuring continuity of learning.\",\n                        \"Supporting students with Education, Health and Care Plans (EHCPs) in and out of the classroom.\",\n                        \"Facilitating the academic and emotional growth of students with SEMH, ASD, ADHD, and physical disabilities.\",\n                        \"Collaborating with Teachers and Senior Leadership Teams to enhance student behaviour and academic performance.\",\n                        \"Coordinating efforts to improve student attendance and facilitating communication between families and schools.\",\n                        \"Writing detailed progress and incident reports.\"\n                    ]\n                },\n                {\n                    \"date_range\": \"2018 - 2020\",\n                    \"role\": \"Support Worker\",\n                    \"company\": \"Horizon Cares Home\",\n                    \"responsibilities\": [\n                        \"Providing general care and support to emotionally affected young individuals.\",\n                        \"Coordinating school medical appointments and liaising with mental health professionals for comprehensive care.\",\n                        \"Managing crises, ensuring legal compliance, and overseeing court attendances as needed.\",\n                        \"Maintaining medication records and managing weekly cooking duties for over ten individuals.\"\n                    ]\n                },\n                {\n                    \"date_range\": \"2016 - 2018\",\n                    \"role\": \"Support Worker\",\n                    \"company\": \"Agency\",\n                    \"responsibilities\": [\n                        \"Offering educational support within special needs schools, focusing on autism and behavioural issues.\",\n                        \"Engaging in one-on-one tutoring and providing medical support.\",\n                        \"Crafting detailed reports and conducting family support initiatives.\",\n                        \"Planning and orchestrating educational outings and conducting risk assessments.\"\n                    ]\n                },\n                {\n                    \"date_range\": \"2014 - 2016\",\n                    \"role\": \"Self-Employed Building Painting Contractor\",\n                    \"company\": \"Self-Employed\",\n                    \"responsibilities\": [\n                        \"Managing project pricing, tendering, and organization of work.\"\n                    ]\n                },\n                {\n                    \"date_range\": \"2011 - 2013\",\n                    \"role\": \"Support Worker\",\n                    \"company\": \"Keys Group\",\n                    \"responsibilities\": [\n                        \"Developing and facilitating social activities and arts programs for young people.\",\n                        \"Engaging actively with young people to enhance social mobility and future planning.\",\n                        \"Collaborating closely with staff and parents while maintaining strict adherence to privacy policies.\",\n                        \"Proactively participating in the staff selection and interview process.\"\n                    ]\n                }\n            ],\n            \"qualifications\": [\n                \"Level 3 NVQ Assessor\",\n                \"Level 3 NVQ in Looked After Children\",\n                \"Care Management (University of Greenwich)\",\n                \"CSE Qualifications - Maths, English, Geography, History, Physics, Metalwork\",\n                \"City and Guilds in Painting and Decorating\",\n                \"Counselling Skills Level 2\"\n            ],\n            \"interests\": \"Interest in integrating innovative teaching methods to engage students in mathematics and physics.\",\n            \"email_subject\": \"Exceptional Math Teacher Available for Immediate Placement\",\n            \"email_body\": \"Dear Hiring Manager,\\n\\nIntroducing an extraordinary candidate for your consideration:\\n\\n- ✅ **Proven Expertise:** Over 30 years of experience in education and social care.\\n- 🎓 **Diverse Sector Experience:** Extensive work with students aged 8-18, including those with SEMH, ASD, and ADHD.\\n- 🌟 **Math & Physics Focus:** Solid foundation in mathematics and physics instruction, ready to inspire.\\n- 🏆 **Impactful Educator:** Skilled in fostering an inclusive and supportive learning environment.\\n- 📈 **Strategic Collaborator:** Works effectively with teachers, parents, and SLT to enhance student outcomes.\\n- 🗂 **Comprehensive Teaching Approach:** Adept at lesson planning, student support, and behaviour management.\\n\\nRaymond's potential to innovate and inspire in your school setting is immense. Do not miss the opportunity to enrich your academic team with a passionate and highly skilled educator.\\n\\nThank you for considering this excellent candidate for your school.\\n\\nBest regards,\\n\\n[Your Name]\\nEducation Recruiter, Edukai\"\n        },\n        \"personal_info\": {\n            \"full_name\": \"Raymond Lindo\",\n            \"email\": null,\n            \"whatsapp\": null,\n            \"skill\": [\n                \"Proven expertise in social care and education\",\n                \"Extensive experience with SEMH, ASD, and ADHD\",\n                \"Math and Physics focus\",\n                \"Empathetic communication skills\",\n                \"Lesson planning and behavior management\"\n            ],\n            \"experience\": \"30 years\",\n            \"location\": \"London\"\n        }\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "CV rewrite",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"cv_data\": {\n        \"name\": \"Raymond\",\n            \"role\": \"Math Teacher\",\n            \"location\": \"Dhaka\",\n            \"availability\": \"Immediate\",\n            \"professional_profile\": \"Dedicated educator with rich experience in youth and social care transitioning to education with a specialization in mathematics and physics tutoring. Leverages over 30 years of experience to engage students with unique learning needs, focusing on fostering understanding, respect, and academic growth. Seeking to empower students through confidence-building in mathematics and related subjects while applying proven communication and supportive techniques.\",\n            \"employment_history\": [\n                {\n                    \"date_range\": \"2021 - Present\",\n                    \"role\": \"Cover Supervisor / HLTA / Mentor\",\n                    \"company\": \"Lunatus Education\",\n                    \"responsibilities\": [\n                        \"Managed classroom activities for absent teachers, ensuring seamless transition and continued learning.\",\n                        \"Supported students aged 8-18 with EHCPs, focusing on SEMH, ASD, ADHD, and other learning challenges.\",\n                        \"Collaborated with educators to address student behavior and academic progression, enhancing academic environments.\",\n                        \"Participated in student attendance and family liaison efforts, attending multidisciplinary meetings.\"\n                    ]\n                },\n                {\n                    \"date_range\": \"2018 - 2020\",\n                    \"role\": \"Senior Residential Care Worker\",\n                    \"company\": \"Horizon Cares Home\",\n                    \"responsibilities\": [\n                        \"Provided comprehensive care to emotionally challenged youth, managing crisis situations effectively.\",\n                        \"Coordinated educational and medical appointments, aligning with mental health specialists.\",\n                        \"Facilitated legal education and court engagement for youth, fostering understanding of the legal system.\",\n                        \"Oversaw residence management tasks including meal preparation for ten individuals.\"\n                    ]\n                },\n                {\n                    \"date_range\": \"2016 - 2018\",\n                    \"role\": \"Support Worker (Agency)\",\n                    \"company\": \"Various Special Needs Schools\",\n                    \"responsibilities\": [\n                        \"Contributed to special needs education with a focus on autism, behavioral challenges, and learning difficulties.\",\n                        \"Engaged in one-on-one tutoring and medical report writing with meticulous attention to detail.\",\n                        \"Developed respectful relationships with students while adhering to school conduct codes.\",\n                        \"Organized educational outings and provided travel training, promoting independence and safety.\"\n                    ]\n                }\n            ],\n            \"qualifications\": [\n                \"Level 3 Assessor NVQ\",\n                \"Level 3 Looked After Children NVQ Care\",\n                \"Care Management from University of Greenwich\",\n                \"City and Guilds in Painting and Decorating\",\n                \"Counseling Skills Level Two\"\n            ],\n            \"interests\": \"Building strong student-teacher rapport.\",\n            \"email_subject\": \"Experienced Educator Transitioning to Math Teaching Role\",\n            \"email_body\": \"🌟 **Introducing Raymond: Math Teaching Specialist**\\n\\nWe are excited to present Raymond, an accomplished professional seeking a math teaching role. With a wealth of experience in youth and care sectors, Raymond brings a unique perspective to educational settings. Here’s why Raymond would be an asset to your team:\\n\\n- ✅ Over 30 years of diverse experience in youth support and education.\\n- 🏆 Expertise in handling students with various learning difficulties including SEMH, ASD, and ADHD.\\n- 🎓 Skilled in fostering academic and personal growth through a supportive, individualized approach.\\n- 🌟 Proven ability to create engaging and respectful classroom environments that motivate learning.\\n- 📊 Strong skills in behavior management, lesson planning, and student engagement.\\n\\nRaymond is ready to leverage his extensive experience to inspire students in mathematics and related fields at your school. \\n\\n**References available upon request.**\"\n    }\n}"
+				},
+				"url": {
+					"raw": "{{global}}/api/v1/rewrite",
+					"host": [
+						"{{global}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"rewrite"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "local",
+			"value": "http://127.0.0.1:8000"
+		},
+		{
+			"key": "global",
+			"value": "http://127.0.0.1:8000"
+		},
+		{
+			"key": "task_id",
+			"value": ""
+		}
+	]
+}

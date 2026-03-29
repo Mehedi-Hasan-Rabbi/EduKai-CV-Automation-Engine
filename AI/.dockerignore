@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+.git
+.gitignore
+*.md
+app/static/extracted_photo/*
+app/static/generated/*
+Edukai_CV_Automation_Tests.postman_collection.json

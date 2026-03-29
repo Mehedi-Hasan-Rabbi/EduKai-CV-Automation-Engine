@@ -1,0 +1,11 @@
+Based on the REWRITTEN CV data, draft a candidate introduction email.
+
+1. EMAIL BODY:
+   - Create a "Candidate Spec" email for a school hiring manager.
+   - Length: Maximum 300 words.
+   - Format: Use bullet points and ATTRACTIVE COLOURFUL ICONS (e.g., ✅, 🏆, 🎓, 🌟) to list key skills, qualities, and achievements.
+   - Tone: Professional, persuasive, and attention-grabbing.
+   - Goal: Highlight benefits to the school.
+
+2. EMAIL SUBJECT:
+   - Create ONE emotive, thought-provoking, and attractive subject line that will encourage the hiring manager to open the email.
