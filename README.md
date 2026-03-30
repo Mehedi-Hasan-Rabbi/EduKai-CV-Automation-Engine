@@ -4,6 +4,16 @@ A production-grade backend system that automates the full lifecycle of candidate
 
 Built with **Django 6**, **Celery**, **MinIO**, **PostgreSQL**, **Redis**, and **SendGrid**, containerised with Docker. 🐳
 
+![Django](https://img.shields.io/badge/Django-6.0-green?logo=django)
+![FastAPI](https://img.shields.io/badge/FastAPI-AI%20Service-009688?logo=fastapi)
+![Celery](https://img.shields.io/badge/Celery-Distributed%20Tasks-37814A?logo=celery)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?logo=postgresql)
+![Redis](https://img.shields.io/badge/Redis-7-red?logo=redis)
+![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker)
+![MinIO](https://img.shields.io/badge/MinIO-S3%20Storage-orange)
+![SendGrid](https://img.shields.io/badge/Email-SendGrid-blue)
+![Status](https://img.shields.io/badge/Status-Production--Ready-success)
+
 ---
 
 ## Table of Contents 📚
