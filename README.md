@@ -2,7 +2,7 @@
 
 A production-grade backend system that automates the full lifecycle of candidate CV processing for an education recruitment agency — from bulk upload through AI-powered enhancement, PDF generation, geo-filtered organization matching, and targeted email outreach.
 
-Built with **Django 6**, **Celery**, **MinIO**, **PostgreSQL**, **Redis**, and **SendGrid**, containerised with Docker. 🐳
+Built with **Django 6**, **Celery**, **MinIO**, **PostgreSQL**, **Redis**, and **SendGrid**, containerised with **Docker**. 🐳
 
 ![Django](https://img.shields.io/badge/Django-6.0-green?logo=django)
 ![FastAPI](https://img.shields.io/badge/FastAPI-AI%20Service-009688?logo=fastapi)
