@@ -1,84 +1,184 @@
-# EduKai CV Automation Engine
+# EduKai CV Automation Engine 🚀📄
 
 A production-grade backend system that automates the full lifecycle of candidate CV processing for an education recruitment agency — from bulk upload through AI-powered enhancement, PDF generation, geo-filtered organization matching, and targeted email outreach.
 
-Built with **Django 6**, **Celery**, **MinIO**, **PostgreSQL**, **Redis**, and **SendGrid**, containerised with Docker.
+Built with **Django 6**, **Celery**, **MinIO**, **PostgreSQL**, **Redis**, and **SendGrid**, containerised with Docker. 🐳
 
 ---
 
-## Table of Contents
+## Table of Contents 📚
 
 - [Overview](#overview)
 - [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
+- [Getting Started — Docker](#getting-started--docker)
+- [Getting Started — Local Development](#getting-started--local-development)
 - [Environment Variables](#environment-variables)
 - [API Reference](#api-reference)
 - [Background Tasks](#background-tasks)
+- [Performance Notes](#performance-notes)
 - [Key Design Decisions](#key-design-decisions)
 
 ---
 
-## Overview
+## Overview 🎯
 
 EduKai automates a recruitment agency's entire candidate workflow:
 
 1. **Bulk CV Upload** — Upload 500–1000 CVs at once. Each CV is stored in MinIO and queued for AI processing.
-2. **AI Processing** — A FastAPI/Celery AI service extracts candidate data, performs quality checks, and generates enhanced email content.
+2. **AI Processing** — A FastAPI AI service extracts candidate data, performs quality checks, and generates enhanced email content using Celery.
 3. **PDF Generation** — WeasyPrint generates a branded enhanced CV PDF stored in MinIO.
-4. **Availability Email** — Candidates are automatically emailed about new opportunities via SendGrid.
+4. **Availability Email** — Candidates are automatically emailed about new opportunities via SendGrid. ✉️
 5. **Organization Management** — Import 24,000+ schools from Excel, auto-geocode addresses using Nominatim (free, no API key).
-6. **Geo Filtering** — Find all organizations within N km of a candidate using their postcode.
+6. **Geo Filtering** — Find all organizations within N km of a candidate using their postcode. 📍
 7. **Targeted Outreach** — Send candidate profiles to up to 1000 selected school contacts in one request.
-8. **Dashboard** — Real-time statistics, activity log, and notification system for the system operator.
+8. **Dashboard** — Real-time statistics, activity log, and notification system for the system operator. 📊
 
 ---
 
-## Architecture
+## Architecture 🏗️
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                        Docker Network                        │
-│                                                              │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐               │
-│  │ Backend  │    │ AI       │    │ MinIO    │               │
-│  │ Django   │◄──►│ FastAPI  │    │ Storage  │               │
-│  │ :8000    │    │ :8080    │    │ :9000    │               │
-│  └────┬─────┘    └────┬─────┘    └──────────┘               │
-│       │               │                                      │
-│  ┌────▼──────────────▼──┐    ┌──────────┐                   │
-│  │       Redis           │    │ Postgres │                   │
-│  │  Broker + Cache       │    │ :5432    │                   │
-│  └────┬──────────────────┘    └──────────┘                   │
-│       │                                                      │
-│  ┌────▼────────────────────────────────────┐                 │
-│  │           Celery Workers                │                 │
-│  │  default │ polling │ pdf │ beat         │                 │
-│  └─────────────────────────────────────────┘                 │
-└──────────────────────────────────────────────────────────────┘
+### Docker services 🐋
+
+```mermaid
+graph TD
+    subgraph Infrastructure
+        Redis[Redis<br/>Broker + Cache<br/>:6379]
+        Postgres[PostgreSQL<br/>Primary DB<br/>:5431]
+        MinIO[MinIO<br/>File Storage<br/>:9000/:9001]
+    end
+
+    subgraph AI["AI Service"]
+        AIApp[AI FastAPI<br/>:8080]
+        AIWorker[AI Celery Worker<br/>GPT tasks]
+    end
+
+    subgraph Backend["Backend"]
+        Django[Django<br/>:8000]
+        CeleryDefault[Celery default<br/>concurrency: 4]
+        CeleryPolling[Celery polling<br/>concurrency: 4]
+        CeleryPDF[Celery pdf<br/>concurrency: 2]
+        CeleryBeat[Celery beat<br/>every 5 min]
+    end
+
+    Redis --> AIApp
+    Redis --> AIWorker
+    Redis --> Django
+    Redis --> CeleryDefault
+    Redis --> CeleryPolling
+    Redis --> CeleryPDF
+    Redis --> CeleryBeat
+    Postgres --> Django
+    Postgres --> CeleryDefault
+    Postgres --> CeleryPolling
+    Postgres --> CeleryPDF
+    MinIO --> Django
+    MinIO --> CeleryDefault
+    Django <-->|CV URL + task_id| AIApp
 ```
 
-### Data Flow — CV Processing
+### CV processing flow 🔄
 
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant D as Django API
+    participant M as MinIO
+    participant R as Redis Queue
+    participant W1 as Worker (default)
+    participant AI as AI Service
+    participant W2 as Worker (polling)
+    participant W3 as Worker (pdf)
+    participant SG as SendGrid
+
+    U->>D: POST /upload/ (CV files)
+    D->>M: Store CV file
+    D->>R: Queue process_cv_task (2s stagger)
+    D-->>U: 202 Accepted + batch_id
+
+    R->>W1: process_cv_task
+    W1->>AI: POST /api/v1/regeneration/ (cv_url)
+    AI-->>W1: { task_id }
+    W1->>R: Queue poll_ai_result_task
+
+    loop Poll every 30s - Default 60 round
+        R->>W2: poll_ai_result_task
+        W2->>AI: GET /api/v1/tasks/{task_id}
+        AI-->>W2: { status: PENDING }
+    end
+
+    AI-->>W2: { status: completed, result: {...} }
+    W2->>M: Download + save profile photo
+    W2->>R: Queue generate_pdf_task
+
+    R->>W3: generate_pdf_task
+    W3->>W3: WeasyPrint renders HTML → PDF
+    W3->>M: Save enhanced CV PDF
+    W3->>R: Queue send_availability_email
+
+    R->>W1: send_availability_email_task
+    W1->>SG: Send email to candidate
 ```
-Upload CV
-  → store in MinIO
-  → process_cv_task (queue: default)
-      → POST cv_url to AI service
-      → receive task_id
-      → poll_ai_result_task (queue: polling)
-          → polls AI every 30s
-          → on completion: save data + download profile photo
-          → generate_enhanced_cv_pdf_task (queue: pdf)
-              → render HTML template with WeasyPrint
-              → save PDF to MinIO
-              → send availability email via SendGrid
+
+### Celery queue architecture 📬
+
+```mermaid
+graph LR
+    subgraph Queues
+        Q1[default queue]
+        Q2[polling queue]
+        Q3[pdf queue]
+        Q4[beat scheduler]
+    end
+
+    subgraph default_tasks["default tasks"]
+        T1[process_cv_task]
+        T2[send_availability_email]
+        T3[send_to_contacts]
+        T4[geocode tasks]
+        T5[import_excel tasks]
+    end
+
+    subgraph polling_tasks["polling tasks"]
+        T6[poll_ai_result_task]
+        T7[poll_rewrite_result_task]
+    end
+
+    subgraph pdf_tasks["pdf tasks"]
+        T8[generate_enhanced_cv_pdf_task]
+    end
+
+    subgraph beat_tasks["beat tasks"]
+        T9[sync_batch_counts every 5 min]
+    end
+
+    Q1 --> default_tasks
+    Q2 --> polling_tasks
+    Q3 --> pdf_tasks
+    Q4 --> beat_tasks
+```
+
+### System flow — organization geo matching 🗺️
+
+```mermaid
+flowchart LR
+    A[Candidate<br/>location string] --> B{Has lat/lng?}
+    B -- No --> C[Nominatim geocode<br/>on demand]
+    C --> D[Save lat/lng to DB]
+    D --> E[Calculate distances]
+    B -- Yes --> E
+    E --> F[Filter orgs within radius and other parameter]
+    F --> G[Return contacts<br/>sorted by distance]
+    G --> H[User selects contacts]
+    H --> I[POST send-to-contacts]
+    I --> J[send_to_contacts_task<br/>queue: default]
+    J --> K[SendGrid bulk send]
 ```
 
 ---
 
-## Tech Stack
+## Tech Stack 🛠️
 
 | Layer | Technology |
 |---|---|
@@ -97,7 +197,7 @@ Upload CV
 
 ---
 
-## Project Structure
+## Project Structure 🗂️
 
 ```
 EduKai-CV-Automation-Engine/
@@ -172,14 +272,14 @@ EduKai-CV-Automation-Engine/
 
 ---
 
-## Getting Started
+## Getting Started — Docker 🧭
 
-### Prerequisites
+### Prerequisites ✅
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
 - Git
 
-### Quick Start
+### Steps
 
 **1. Clone the repository**
 
@@ -188,14 +288,14 @@ git clone https://github.com/Mehedi-Hasan-Rabbi/EduKai-CV-Automation-Engine
 cd EduKai-CV-Automation-Engine
 ```
 
-**2. Configure environment variables**
+**2. Configure environment variables** 🔐
 
 ```bash
 cp Backend/.env.example Backend/.env
 cp AI/.env.example AI/.env
 ```
 
-Open `Backend/.env` and set the required values:
+Open `Backend/.env` and set at minimum:
 
 ```env
 SECRET_KEY=your-50-char-secret-key-here
@@ -203,13 +303,13 @@ SENDGRID_API_KEY=SG....
 SENDGRID_FROM_EMAIL=you@yourdomain.com
 ```
 
-Open `AI/.env` and add your OpenAI key:
+Open `AI/.env` and add:
 
 ```env
 OPENAI_API_KEY=sk-...
 ```
 
-**3. Build and start all services**
+**3. Build and start all services** 🚢
 
 ```bash
 docker compose up --build
@@ -225,20 +325,21 @@ In a new terminal:
 docker compose exec backend python manage.py createsuperuser
 ```
 
-**5. Create the MinIO bucket**
+**5. Create the MinIO bucket** 🪣
 
 Option A — via script (recommended):
 ```bash
+cd Backend
 docker compose exec backend python Create_the_MinIO_Bucket.py
 ```
 
 Option B — via browser:
 1. Open [http://localhost:9001](http://localhost:9001)
-2. Login with `minioadmin` / `minioadmin123`
+2. Login: `minioadmin` / `minioadmin123`
 3. Create a bucket named `edukai`
 4. Set the bucket access policy to **Public**
 
-**6. Verify everything is running**
+**6. Verify everything is running** ✅
 
 | Service | URL |
 |---|---|
@@ -249,9 +350,7 @@ Option B — via browser:
 | AI Service | http://localhost:8080 |
 | MinIO Console | http://localhost:9001 |
 
-**7. Import demo data (optional)**
-
-Import sample organizations and contacts using the demo Excel files:
+**7. Import demo data (optional)** 📥
 
 ```
 POST http://localhost:8000/api/organizations/import/
@@ -263,39 +362,121 @@ Body: form-data → file: Backend/Demo Data/Contacts.xlsx
 
 ---
 
-### Development Without Docker
+## Getting Started — Local Development 🖥️
 
-If you prefer running locally:
+Running without Docker requires starting each service manually. You need PostgreSQL, Redis, and MinIO running locally first.
 
-**Backend:**
+### Step 1 — Start infrastructure with Docker (individual containers)
+
 ```bash
-cd Backend
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env            # configure .env
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py runserver
+# Redis
+docker run --name edukai-redis -d -p 6379:6379 --rm redis
+
+# MinIO
+docker run -d -p 9000:9000 -p 9001:9001 \
+  --name edukai-minio \
+  -e MINIO_ROOT_USER=minioadmin \
+  -e MINIO_ROOT_PASSWORD=minioadmin123 \
+  -v minio_data:/data \
+  minio/minio server data --console-address ":9001"
+
+# PostgreSQL
+docker run --name edukai-postgres \
+  -e POSTGRES_PASSWORD=ultr4_instinct \
+  -p 5431:5432 \
+  -d postgres
 ```
 
-**Celery workers — open 3 additional terminals:**
+### Step 2 — Set up and run the AI service 🤖
+
 ```bash
-# Terminal 2 — default queue (CV upload, geocoding, emails)
-celery -A edukai worker --queues=default --concurrency=4 --loglevel=info --hostname=default@%h
+cd AI
 
-# Terminal 3 — polling and pdf queues
-celery -A edukai worker --queues=polling,pdf --concurrency=4 --loglevel=info --hostname=pollpdf@%h
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate       # Windows: venv\Scripts\activate
 
-# Terminal 4 — beat scheduler (runs every 5 min batch sync)
+# Install dependencies
+pip install -r requirements.txt
+
+# Copy and configure env
+cp .env.example .env
+# Add OPENAI_API_KEY to .env
+```
+
+Open two terminals in the `AI/` directory:
+
+```bash
+# Terminal 1 — AI FastAPI server
+uvicorn app.main:app --reload --port 8080
+
+# Terminal 2 — AI Celery worker
+celery -A app.core.celery_app worker --loglevel=info
+```
+
+### Step 3 — Set up and run the Django backend 🐍
+
+```bash
+cd Backend
+
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate       # Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Copy and configure env
+cp .env.example .env
+# Set DATABASE_URL, REDIS_URL, MINIO_*, AI_BASE_URL, etc.
+
+# Run migrations and create superuser
+python manage.py migrate
+python manage.py createsuperuser
+```
+
+### Step 4 — Start backend workers (4 separate terminals) ⚙️
+
+```bash
+# Terminal 1 — Django development server
+python manage.py runserver
+
+# Terminal 2 — Default worker (CV processing, geocoding, emails, imports)
+celery -A edukai worker \
+  --queues=default \
+  --concurrency=4 \
+  --loglevel=info \
+  --hostname=default@%h
+
+# Terminal 3 — PDF worker (WeasyPrint, memory-intensive)
+celery -A edukai worker \
+  --queues=pdf \
+  --concurrency=2 \
+  --loglevel=info \
+  --hostname=pdf@%h
+
+# Terminal 4 — Polling worker (AI result polling)
+celery -A edukai worker \
+  --queues=polling \
+  --concurrency=4 \
+  --loglevel=info \
+  --hostname=polling@%h
+
+# Terminal 5 — Beat scheduler (periodic tasks every 5 min)
 celery -A edukai beat --loglevel=info
 ```
 
-Redis, PostgreSQL, and MinIO must be running locally before starting.
+### Step 5 — Create MinIO bucket 🪣
+
+```bash
+python Create_the_MinIO_Bucket.py
+```
+
+Or open [http://localhost:9001](http://localhost:9001), login with `minioadmin/minioadmin123`, create bucket `edukai`, set access to Public.
 
 ---
 
-## Environment Variables
+## Environment Variables 🔧
 
 ### Backend (`Backend/.env`)
 
@@ -304,9 +485,9 @@ Redis, PostgreSQL, and MinIO must be running locally before starting.
 | `SECRET_KEY` | ✅ | Django secret key (min 50 chars) |
 | `DEBUG` | ✅ | `True` for dev, `False` for production |
 | `DATABASE_URL` | ✅ | PostgreSQL connection string |
-| `REDIS_URL` | ✅ | Redis URL for Django cache |
-| `CELERY_BROKER_URL` | ✅ | Redis URL for Celery broker |
-| `CELERY_RESULT_BACKEND` | ✅ | Redis URL for Celery results |
+| `REDIS_URL` | ✅ | Redis URL for Django cache (e.g Use DB 1) |
+| `CELERY_BROKER_URL` | ✅ | Redis URL for Celery broker (e.g Use DB 2) |
+| `CELERY_RESULT_BACKEND` | ✅ | Redis URL for Celery results (e.g Use DB 2) |
 | `USE_S3` | ✅ | `True` to use MinIO/S3 storage |
 | `MINIO_ACCESS_KEY` | ✅ | MinIO access key |
 | `MINIO_SECRET_KEY` | ✅ | MinIO secret key |
@@ -327,14 +508,14 @@ Redis, PostgreSQL, and MinIO must be running locally before starting.
 | Variable | Required | Description |
 |---|---|---|
 | `OPENAI_API_KEY` | ✅ | OpenAI API key |
-| `REDIS_URL` | ✅ | Redis URL (uses separate DB from backend) |
+| `REDIS_URL` | ✅ | Redis URL (uses separate DB from backend. e.g. Use DB 3) |
 | `APP_BASE_URL` | ✅ | AI service's own base URL |
 
 ---
 
-## API Reference
+## API Reference 📡
 
-Full interactive documentation available at [http://localhost:8000/api/docs/](http://localhost:8000/api/docs/).
+Full interactive documentation at [http://localhost:8000/api/docs/](http://localhost:8000/api/docs/).
 
 ### Authentication — `/api/auth/`
 
@@ -347,7 +528,7 @@ Full interactive documentation available at [http://localhost:8000/api/docs/](ht
 | GET | `/me/` | Required | Current user profile |
 | PATCH | `/profile/update/` | Required | Update profile photo, name, etc. |
 | POST | `/password/update/` | Required | Change password |
-| POST | `/forgot-password/` | Public | Request password reset OTP |
+| POST | `/forgot-password/` | Public | Request password reset OTP via email |
 | POST | `/verify-otp/` | Public | Verify OTP code |
 | POST | `/reset-password/` | Public | Set new password |
 | GET | `/dashboard/` | Superuser | System-wide statistics |
@@ -366,7 +547,7 @@ Full interactive documentation available at [http://localhost:8000/api/docs/](ht
 | POST | `/<id>/rewrite/` | Trigger AI CV rewrite |
 | GET | `/<id>/rewrite/status/` | Poll rewrite completion |
 | GET | `/<id>/nearby-organizations/` | Organizations within radius of candidate |
-| GET | `/<id>/nearby-contacts/` | School contacts within radius (filterable by phase, job title) |
+| GET | `/<id>/nearby-contacts/` | School contacts within radius (filterable) |
 | POST | `/<id>/send-to-contacts/` | Email candidate profile to up to 1000 contacts |
 | GET | `/send-status/<task_id>/` | Poll email send task result |
 | GET | `/batches/` | Paginated list of upload batches |
@@ -394,7 +575,7 @@ Full interactive documentation available at [http://localhost:8000/api/docs/](ht
 
 ---
 
-## Background Tasks
+## Background Tasks ⏱️
 
 Four dedicated Celery queues prevent task interference under heavy load:
 
@@ -405,7 +586,7 @@ Four dedicated Celery queues prevent task interference under heavy load:
 | `pdf` | `celery_pdf` | PDF generation (memory-intensive) | 2 |
 | `beat` | `celery_beat` | Periodic tasks (batch sync every 5 min) | — |
 
-### Task Chain — Full CV Lifecycle
+### Task chain — full CV lifecycle 🔗
 
 ```
 [Upload] BulkCVUploadView
@@ -419,36 +600,52 @@ Four dedicated Celery queues prevent task interference under heavy load:
                                 SendGrid → candidate inbox
 ```
 
-### Periodic Tasks
+### Periodic tasks 🕒
 
 `sync_batch_counts` runs every 5 minutes via Celery Beat. It recalculates batch `processed_count` and `failed_count` from actual candidate statuses — fixing batches stuck at 0% when workers crash mid-task.
 
 ---
 
-## Key Design Decisions
+## Performance Notes 📈
 
-**Separate Celery queues** — PDF generation is slow and memory-heavy. Mixing it with polling tasks in one queue would cause AI polling to timeout. Each queue has appropriate concurrency for its workload.
+These are real-world observations from production testing.
 
-**Two MinIO clients** — Pre-signed URLs must be signed with the public URL (what the browser sees). File operations use the internal container URL for speed. `minio_utils.py` maintains two separate boto3 clients to handle this correctly.
+**CV processing time** — A batch of 600 CVs took approximately 1.5 hours end-to-end. This includes AI extraction (the bottleneck), PDF generation, and email sending. Processing time scales linearly with batch size.
 
-**On-demand geocoding for candidates** — Geocoding 1000+ candidates on upload would take 20+ minutes. Coordinates are populated only when a geo filter is first requested, then cached permanently on the candidate record.
+**Geocoding time** — Nominatim (free OpenStreetMap geocoder) enforces a 1 request/second rate limit. For safety, a 2-second stagger is used between geocoding tasks. Calculation: `number_of_organizations × 2 seconds`. For 500 organizations, expect ~17 minutes. For 24,000 organizations, geocoding runs as a background process over many hours. The application remains fully functional during geocoding — only the geo-radius filter is unavailable for organizations not yet geocoded.
 
-**`is_regeneration` flag on PDF generation** — When a user edits `job_titles`, `name`, or `location`, the PDF is automatically regenerated. The flag skips incrementing `batch.processed_count` and sending the availability email again on regeneration.
+**Sendgrid email deliverability** — New SendGrid accounts have low sender reputation. Emails may initially go to spam. This improves over time as the domain builds reputation. To improve deliverability: verify your sending domain DNS records in SendGrid, enable IP warmup for new accounts, use a personal sender name rather than a brand name, and avoid emojis in subject lines. 📨
 
-**Short PostgreSQL `conn_max_age`** — Under heavy concurrent load, long-lived DB connections are killed by PostgreSQL, causing `SSL connection closed unexpectedly` in workers. Set to 60 seconds to force fresh reconnections.
-
-**ActivityLog 1000-entry limit** — The system is operated by a single user. Rather than a complex notification infrastructure, a simple DB-backed activity log with automatic pruning at 1000 entries covers all needs efficiently.
-
-**JWT in HttpOnly cookies** — Access and refresh tokens are stored in HttpOnly cookies, not localStorage. This prevents XSS attacks from stealing tokens. The custom `CookieJWTAuthentication` class falls back to the `Authorization` header for Swagger UI compatibility.
+**Bulk email sending** — Sending to 1000 contacts is handled by a single Celery task that iterates sequentially. SendGrid processes each email individually. Expect roughly 2-5 minutes for 1000 emails depending on network latency.
 
 ---
 
-## Postman Collection
+## Key Design Decisions 🧠
+
+**Separate Celery queues** — PDF generation is slow and memory-heavy. Mixing it with polling tasks in one queue would cause AI polling to timeout. Each queue has appropriate concurrency for its workload.
+
+**Two MinIO clients** — Pre-signed URLs must be signed with the public URL (what the browser sees). File operations use the internal container URL for speed. `minio_utils.py` maintains two separate boto3 clients to handle this correctly and avoid `SignatureDoesNotMatch` errors.
+
+**On-demand geocoding for candidates** — Geocoding 1000+ candidates on upload would take 20+ minutes and block the upload response. Coordinates are populated only when a geo filter is first requested, then cached permanently on the candidate record for instant subsequent lookups.
+
+**`is_regeneration` flag on PDF generation** — When a user edits `job_titles`, `name`, or `location`, the PDF is automatically regenerated. The flag skips incrementing `batch.processed_count` and sending the availability email again on regeneration, preventing double-counting and duplicate emails.
+
+**Short PostgreSQL `conn_max_age`** — Under heavy concurrent load (300+ CVs), long-lived DB connections are killed by PostgreSQL, causing `SSL connection closed unexpectedly` errors in workers. Set to 60 seconds to force fresh reconnections instead of reusing stale ones.
+
+**ActivityLog 1000-entry limit** — The system is operated by a single user. Rather than a complex WebSocket or pub/sub notification infrastructure, a simple DB-backed activity log with automatic pruning at 1000 entries covers all needs efficiently.
+
+**JWT in HttpOnly cookies** — Access and refresh tokens are stored in HttpOnly cookies, not localStorage. This prevents XSS attacks from stealing tokens. The custom `CookieJWTAuthentication` class falls back to the `Authorization` header for Swagger UI compatibility.
+
+**Batch task staggering** — When uploading 250 CVs, tasks fire with a 2-second countdown per CV (`countdown=index * 2`). This prevents the AI service from being overwhelmed with simultaneous requests and reduces the chance of 429 rate limit errors.
+
+---
+
+## Postman Collection 📮
 
 `Backend/Backend.postman_collection.json` contains all endpoints pre-configured for local testing. Import it into Postman and set `base_url` to `http://localhost:8000`.
 
 ---
 
-## License
+## License 📝
 
 MIT License — see [LICENSE](LICENSE) for details.
