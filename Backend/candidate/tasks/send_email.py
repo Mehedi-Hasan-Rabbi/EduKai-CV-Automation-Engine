@@ -5,78 +5,108 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-AVAILABILITY_EMAIL_SUBJECT = "New Opportunity — Are You Available?"
+AVAILABILITY_EMAIL_SUBJECT = "Quick check-in about your availability for new roles"
 
-AVAILABILITY_EMAIL_PLAIN = """
-Are you looking for a new challenge?
 
-Schools need passionate, reliable, and inspiring Educators and Support Staff
-now more than ever. If you're ready for your next opportunity, we are ready
-for you!
+def _get_display_name(candidate) -> str:
+    """
+    Prefer surname-less name, then full name, then fallback.
+    """
+    return (
+        (candidate.name_without_surname or "").strip()
+        or (candidate.name or "").strip()
+        or "there"
+    )
 
-WE ARE THE EDUCATION SPECIALISTS AGENCY
 
-Whether you're looking for flexibility, progression, or your next temp role,
-let's get you placed where you can truly shine.
+def _build_availability_plain(name: str) -> str:
+    return f"""Hi {name},
 
-Interested? Reply to this email with:
-- Your availability (what date can you start?)
-- Full-time or part-time preference?
-- Your location?
-- Job title(s) you're looking for?
+I hope you're doing well.
 
-Up to 250 pounds refer-a-friend bonus! (T&Cs apply)
+I'm reaching out to check your current availability for new opportunities in education.
 
-Share with friends, family and colleagues.
-Your next role could be one message away.
+We are currently working with several schools looking for educators and support staff. If you are open to new roles, I would be happy to discuss suitable options with you.
 
-Education Specialists Agency
+If you're interested, could you please reply with:
+- Your availability (start date)
+- Preferred working pattern (full-time / part-time)
+- Your location
+- Roles you are interested in
+
+Best regards,  
+Kai Smith  
+Education Specialists Agency  
 kai.smith@edukai.co.uk
 """
 
-AVAILABILITY_EMAIL_BODY = """
-<!DOCTYPE html>
+
+def _build_availability_html(name: str) -> str:
+    return f"""<!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-</head>
-<body style="font-family: Arial, sans-serif; font-size: 14px; color: #222; max-width: 600px; margin: 0 auto; padding: 20px;">
+<body style="margin:0; padding:0; background-color:#f4f6f8; font-family:Arial, sans-serif;">
 
-  <p>Are you looking for a new challenge?</p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding: 30px 0;">
+    <tr>
+      <td align="center">
 
-  <p>
-    Schools need passionate, reliable, and inspiring
-    <strong>Educators &amp; Support Staff</strong> now more than ever.
-    If you are ready for your next opportunity, we are ready for you!
-  </p>
+        <table width="600" cellpadding="0" cellspacing="0" 
+               style="background:#ffffff; border-radius:8px; padding:30px; box-shadow:0 2px 6px rgba(0,0,0,0.05);">
 
-  <p><strong>WE ARE THE EDUCATION SPECIALISTS AGENCY</strong></p>
+          <tr>
+            <td style="font-size:16px; color:#333;">
+              
+              <p>Hi <strong>{name}</strong>,</p>
 
-  <p>
-    Whether you are looking for flexibility, progression, or your next temp role,
-    let us get you placed where you can truly shine.
-  </p>
+              <p>I hope you're doing well.</p>
 
-  <p><strong>Interested? Reply to this email with:</strong></p>
-  <ul>
-    <li>Your availability — what date can you start?</li>
-    <li>Full-time or part-time preference?</li>
-    <li>Your location?</li>
-    <li>Job title(s) you are looking for?</li>
-  </ul>
+              <p>
+                I wanted to check your availability for potential opportunities 
+                within education. We are currently working with a number of schools 
+                seeking educators and support staff.
+              </p>
 
-  <p>
-    <strong>Up to &pound;250 refer-a-friend bonus!</strong> (T&amp;Cs apply)
-  </p>
+              <p>
+                If you are open to new roles, I would be happy to discuss options 
+                that match your experience and preferences.
+              </p>
 
-  <p>Share with friends, family &amp; colleagues.</p>
-  <p>Your next role could be one message away.</p>
+              <p><strong>Please let me know:</strong></p>
+              <ul>
+                <li>Your availability (start date)</li>
+                <li>Preferred working pattern (full-time / part-time)</li>
+                <li>Your location</li>
+                <li>Roles you are interested in</li>
+              </ul>
 
-  <br>
-  <p style="color: #555; font-size: 12px;">
-    Education Specialists Agency<br>
-    <a href="mailto:kai.smith@edukai.co.uk">kai.smith@edukai.co.uk</a>
-  </p>
+              <div style="text-align:center; margin: 30px 0;">
+                <a href="mailto:kai.smith@edukai.co.uk"
+                   style="background:#2563eb; color:#ffffff; padding:12px 20px; 
+                          text-decoration:none; border-radius:5px; font-weight:bold;">
+                  Reply to this email
+                </a>
+              </div>
+
+              <p>Best regards,<br>
+              <strong>Kai Smith</strong><br>
+              Education Specialists Agency</p>
+
+              <hr style="border:none; border-top:1px solid #eee; margin:30px 0;">
+
+              <p style="font-size:12px; color:#777;">
+                Education Specialists Agency<br>
+                Email: kai.smith@edukai.co.uk<br>
+                (This is a professional outreach regarding job opportunities)
+              </p>
+
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
 
 </body>
 </html>
@@ -90,14 +120,8 @@ AVAILABILITY_EMAIL_BODY = """
     name="candidate.tasks.send_availability_email",
 )
 def send_availability_email_task(self, candidate_id: str):
-    """
-    Sends availability email to candidate via SendGrid.
-    From:     job@edukai.co.uk  (domain-authenticated sender)
-    Reply-To: kai.smith@edukai.co.uk  (replies go to system owner)
-    """
     from candidate.models import Candidate
 
-    # ── Guard: skip if SendGrid not configured ────────────────────────────
     if not settings.SENDGRID_API_KEY:
         logger.warning(
             f"[send_email] SENDGRID_API_KEY not set. "
@@ -112,9 +136,7 @@ def send_availability_email_task(self, candidate_id: str):
         return
 
     if not candidate.email:
-        logger.info(
-            f"[send_email] Candidate {candidate_id} has no email. Skipping."
-        )
+        logger.info(f"[send_email] Candidate {candidate_id} has no email. Skipping.")
         return
 
     try:
@@ -124,15 +146,18 @@ def send_availability_email_task(self, candidate_id: str):
             HtmlContent, PlainTextContent, ReplyTo,
         )
 
+        display_name = _get_display_name(candidate)
+        plain_body = _build_availability_plain(display_name)
+        html_body = _build_availability_html(display_name)
+
         message = Mail(
             from_email=From(settings.SENDGRID_FROM_EMAIL, settings.SENDGRID_FROM_NAME),
             to_emails=To(candidate.email),
             subject=Subject(AVAILABILITY_EMAIL_SUBJECT),
-            plain_text_content=PlainTextContent(AVAILABILITY_EMAIL_PLAIN),
-            html_content=HtmlContent(AVAILABILITY_EMAIL_BODY),
+            plain_text_content=PlainTextContent(plain_body),
+            html_content=HtmlContent(html_body),
         )
 
-        # ✅ Replies go to kai.smith@edukai.co.uk not job@edukai.co.uk
         if settings.SENDGRID_REPLY_TO_EMAIL:
             message.reply_to = ReplyTo(
                 email=settings.SENDGRID_REPLY_TO_EMAIL,
@@ -153,12 +178,8 @@ def send_availability_email_task(self, candidate_id: str):
                 f"[send_email] Unexpected SendGrid status {response.status_code} "
                 f"for candidate {candidate_id}."
             )
-            raise self.retry(
-                exc=Exception(f"SendGrid status: {response.status_code}")
-            )
+            raise self.retry(exc=Exception(f"SendGrid status: {response.status_code}"))
 
     except Exception as exc:
-        logger.error(
-            f"[send_email] Failed to send email for candidate {candidate_id}: {exc}"
-        )
+        logger.error(f"[send_email] Failed to send email for candidate {candidate_id}: {exc}")
         raise self.retry(exc=exc)
