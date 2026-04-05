@@ -106,6 +106,7 @@ def poll_ai_result_task(self, candidate_id: str, ai_task_id: str):
 
     # Update candidate from AI data
     candidate.name            = personal_info.get("full_name") or candidate.name
+    candidate.name_without_surname = data_extracted.get("name") or candidate.name_without_surname
     candidate.email           = normalized_email or candidate.email
     candidate.whatsapp_number = personal_info.get("whatsapp") or candidate.whatsapp_number
     candidate.location        = personal_info.get("location") or candidate.location
@@ -138,6 +139,7 @@ def poll_ai_result_task(self, candidate_id: str, ai_task_id: str):
     try:
         candidate.save(update_fields=[
             "name",
+            "name_without_surname",
             "email",
             "whatsapp_number",
             "location",

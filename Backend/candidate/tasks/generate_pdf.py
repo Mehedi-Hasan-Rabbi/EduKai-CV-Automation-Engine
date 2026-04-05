@@ -41,7 +41,11 @@ def generate_enhanced_cv_pdf_task(self, candidate_id: str, is_regeneration: bool
     # -------------------------------------------------------------------------
     cv_context = {
         # ── Editable fields — always use latest from Candidate model ──────
-        "name":     candidate.name or data_extracted.get("name", ""),
+        "name": (
+            candidate.name_without_surname
+            or data_extracted.get("name", "")
+            or candidate.name
+        ),
         "role":     " | ".join(candidate.job_titles) if candidate.job_titles else (
                         " | ".join(data_extracted.get("role", []))
                         if isinstance(data_extracted.get("role"), list)
@@ -92,9 +96,9 @@ def generate_enhanced_cv_pdf_task(self, candidate_id: str, is_regeneration: bool
     # Upload PDF to MinIO
     # -------------------------------------------------------------------------
     safe_name = (
-        candidate.name.replace(" ", "_").lower()
-        if candidate.name
-        else str(candidate_id)
+        (candidate.name_without_surname or candidate.name or str(candidate_id))
+        .replace(" ", "_")
+        .lower()
     )
     file_name = f"{safe_name}_enhanced_cv.pdf"
 
