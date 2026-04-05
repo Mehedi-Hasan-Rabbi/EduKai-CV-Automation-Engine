@@ -169,3 +169,21 @@ class OrganizationCreateUpdateSerializer(serializers.ModelSerializer):
                 f"Organization '{name}' already exists in '{local_authority}'."
             )
         return data
+
+
+class OrganizationContactWithOrgSerializer(serializers.ModelSerializer):
+    """Contact serializer that embeds basic organization info."""
+    organization = OrganizationListSerializer(read_only=True)
+
+    class Meta:
+        model = OrganizationContact
+        fields = [
+            "id",
+            "organization",
+            "contact_person",
+            "job_title",
+            "work_email",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields

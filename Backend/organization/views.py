@@ -23,6 +23,7 @@ from organization.serializers import (
     OrganizationDetailSerializer,
     OrganizationCreateUpdateSerializer,
     OrganizationContactSerializer,
+    OrganizationContactWithOrgSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -48,13 +49,32 @@ class OrganizationListCreateView(APIView):
 
         qs = Organization.objects.prefetch_related("contacts").all()
 
-        phase           = request.query_params.get("phase")
-        local_authority = request.query_params.get("local_authority")
-        town            = request.query_params.get("town")
-        postcode        = request.query_params.get("postcode")
+        # New: generic text search (case-insensitive, partial)
+        search = request.query_params.get("search")
 
+        # Existing + new explicit filters
+        name            = request.query_params.get("name")            # partial match
+        phase           = request.query_params.get("phase")           # exact match
+        gender          = request.query_params.get("gender")          # exact match
+        local_authority = request.query_params.get("local_authority") # partial match
+        town            = request.query_params.get("town")            # partial match
+        postcode        = request.query_params.get("postcode")        # partial match
+
+        if search:
+            qs = qs.filter(
+                models.Q(name__icontains=search) |
+                models.Q(local_authority__icontains=search) |
+                models.Q(town__icontains=search) |
+                models.Q(postcode__icontains=search) |
+                models.Q(urn__icontains=search)
+            )
+
+        if name:
+            qs = qs.filter(name__icontains=name)
         if phase:
             qs = qs.filter(phase=phase)
+        if gender:
+            qs = qs.filter(gender=gender)
         if local_authority:
             qs = qs.filter(local_authority__icontains=local_authority)
         if town:
@@ -62,25 +82,22 @@ class OrganizationListCreateView(APIView):
         if postcode:
             qs = qs.filter(postcode__icontains=postcode)
 
-        # Geo radius filter
+        # Geo radius filter (unchanged) ...
         lat       = request.query_params.get("lat")
         lng       = request.query_params.get("lng")
         radius_km = request.query_params.get("radius_km")
-
         if lat and lng and radius_km:
             try:
                 from geopy.distance import geodesic
                 center    = (float(lat), float(lng))
                 radius_km = float(radius_km)
                 qs        = qs.exclude(latitude=None).exclude(longitude=None)
-
                 filtered_ids = []
                 for org in qs:
                     org_point = (float(org.latitude), float(org.longitude))
                     if geodesic(center, org_point).km <= radius_km:
                         filtered_ids.append(org.id)
                 qs = qs.filter(id__in=filtered_ids)
-
             except (ValueError, TypeError) as exc:
                 return Response(
                     {"detail": f"Invalid geo parameters: {exc}"},
@@ -217,11 +234,25 @@ class AllContactsListView(APIView):
     """
     GET /api/organizations/contacts/
     Returns all contacts across all organizations.
+
+    Supports filters:
+      Contact-level:
+        - contact_name: partial match on contact_person
+        - contact_email: partial match on work_email
+        - job_title: partial match on contact job title
+        - search: partial match on contact_person, work_email, or organization name
+      Organization-level:
+        - org_name: partial match on organization name
+        - phase: exact match on organization phase
+        - gender: exact match on organization gender
+        - local_authority: partial match on organization local authority
+        - town: partial match on organization town
+        - postcode: partial match on organization postcode
     """
     permission_classes = [IsAuthenticated, IsSuperUser]
 
     @extend_schema(
-        responses={200: OrganizationContactSerializer(many=True)},
+        responses={200: OrganizationContactWithOrgSerializer(many=True)},
         summary="List all contacts across all organizations",
         tags=["Organization Contacts"],
     )
@@ -230,8 +261,11 @@ class AllContactsListView(APIView):
 
         qs = OrganizationContact.objects.select_related("organization").all()
 
-        job_title = request.query_params.get("job_title")
-        search    = request.query_params.get("search")
+        # Contact-level filters
+        job_title     = request.query_params.get("job_title")
+        search        = request.query_params.get("search")
+        contact_name  = request.query_params.get("contact_name")
+        contact_email = request.query_params.get("contact_email")
 
         if job_title:
             qs = qs.filter(job_title__icontains=job_title)
@@ -241,10 +275,35 @@ class AllContactsListView(APIView):
                 models.Q(work_email__icontains=search)     |
                 models.Q(organization__name__icontains=search)
             )
+        if contact_name:
+            qs = qs.filter(contact_person__icontains=contact_name)
+        if contact_email:
+            qs = qs.filter(work_email__icontains=contact_email)
+
+        # Organization-level filters
+        org_name        = request.query_params.get("org_name")
+        phase           = request.query_params.get("phase")
+        gender          = request.query_params.get("gender")
+        local_authority = request.query_params.get("local_authority")
+        town            = request.query_params.get("town")
+        postcode        = request.query_params.get("postcode")
+
+        if org_name:
+            qs = qs.filter(organization__name__icontains=org_name)
+        if phase:
+            qs = qs.filter(organization__phase__iexact=phase)
+        if gender:
+            qs = qs.filter(organization__gender__iexact=gender)
+        if local_authority:
+            qs = qs.filter(organization__local_authority__icontains=local_authority)
+        if town:
+            qs = qs.filter(organization__town__icontains=town)
+        if postcode:
+            qs = qs.filter(organization__postcode__icontains=postcode)
 
         paginator  = StandardPagination()
         page       = paginator.paginate_queryset(qs, request)
-        serializer = OrganizationContactSerializer(page, many=True)
+        serializer = OrganizationContactWithOrgSerializer(page, many=True)
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -401,24 +460,23 @@ class ImportOrganizationsView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # ── Validate file type ────────────────────────────────────────────
         if not file.name.endswith(".xlsx"):
             return Response(
                 {"detail": "Only .xlsx files are supported."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # ── Save to shared volume so celery_default can access it ─────────
-        import_dir = "/tmp/imports"
-        os.makedirs(import_dir, exist_ok=True)
-
+        # ── Save file to temp location for Celery to access ───────────────
         suffix = f"_org_import_{file.name}"
         with tempfile.NamedTemporaryFile(
-            delete=False, suffix=suffix, dir=import_dir
+            delete=False, suffix=suffix
         ) as tmp:
             for chunk in file.chunks():
                 tmp.write(chunk)
             tmp_path = tmp.name
 
+        # ── Queue import task ─────────────────────────────────────────────
         from organization.tasks.import_excel import import_organizations_task
         task = import_organizations_task.apply_async(
             args=[tmp_path],
@@ -427,7 +485,7 @@ class ImportOrganizationsView(APIView):
 
         logger.info(
             f"[import_org] Organization import queued. "
-            f"File: '{file.name}', Task: {task.id}, Path: {tmp_path}"
+            f"File: '{file.name}', Task: {task.id}"
         )
 
         return Response(
@@ -472,13 +530,9 @@ class ImportContactsView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # ── Save to shared volume so celery_default can access it ─────────
-        import_dir = "/tmp/imports"
-        os.makedirs(import_dir, exist_ok=True)
-
         suffix = f"_contact_import_{file.name}"
         with tempfile.NamedTemporaryFile(
-            delete=False, suffix=suffix, dir=import_dir
+            delete=False, suffix=suffix
         ) as tmp:
             for chunk in file.chunks():
                 tmp.write(chunk)
@@ -492,7 +546,7 @@ class ImportContactsView(APIView):
 
         logger.info(
             f"[import_contact] Contact import queued. "
-            f"File: '{file.name}', Task: {task.id}, Path: {tmp_path}"
+            f"File: '{file.name}', Task: {task.id}"
         )
 
         return Response(
@@ -527,7 +581,7 @@ class ImportStatusView(APIView):
                 "message": "Import is still in progress.",
             })
 
-        if result.state in ("FAILURE", "REVOKED"):
+        if result.state == "FAILURE":
             return Response({
                 "status": "failed",
                 "error":  str(result.result),
@@ -539,8 +593,7 @@ class ImportStatusView(APIView):
                 "summary": result.result,
             })
 
-        # RETRY, STARTED, or anything else — still processing
         return Response({
-            "status":  "processing",
-            "message": f"Import is in progress (state: {result.state}).",
+            "status":  result.state.lower(),
+            "message": "Import is processing.",
         })
