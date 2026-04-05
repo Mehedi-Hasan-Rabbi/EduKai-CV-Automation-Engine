@@ -124,6 +124,13 @@ class Candidate(models.Model):
     # Personal Information (populated from AI personal_info)
     # -------------------------------------------------------------------------
     name = models.CharField(max_length=255, db_index=True, blank=True, default="")
+    name_without_surname = models.CharField(  # 👈 NEW
+        max_length=255,
+        db_index=True,
+        blank=True,
+        default="",
+        help_text="Given name / first name only (no surname), from AI data_extracted.name",
+    )
     email = models.EmailField(
         db_index=True,
         null=True,

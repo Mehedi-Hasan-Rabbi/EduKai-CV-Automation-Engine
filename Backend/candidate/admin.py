@@ -50,6 +50,7 @@ class CandidateAdmin(admin.ModelAdmin):
     # -------------------------------------------------------------------------
     list_display = (
         "name",
+        "name_without_surname",
         "email",
         "batch",
         "years_of_experience",
@@ -72,6 +73,7 @@ class CandidateAdmin(admin.ModelAdmin):
 
     search_fields = (
         "name",
+        "name_without_surname",
         "email",
         "whatsapp_number",
         "location",
@@ -93,6 +95,7 @@ class CandidateAdmin(admin.ModelAdmin):
         "job_titles_preview",
         "ai_enhanced_cv_content_preview",
         "profile_photo_preview",
+        "name_without_surname"
     )
 
     # -------------------------------------------------------------------------
@@ -108,6 +111,7 @@ class CandidateAdmin(admin.ModelAdmin):
             "fields": (
                 "id",
                 "name",
+                "name_without_surname",
                 "email",
                 "whatsapp_number",
                 "location",

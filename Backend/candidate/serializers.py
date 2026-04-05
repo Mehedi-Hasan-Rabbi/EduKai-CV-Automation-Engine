@@ -155,6 +155,7 @@ class CandidateListSerializer(CandidateFileMixin, serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "name_without_surname",
             "email",
             "whatsapp_number",
             "location",
@@ -189,6 +190,7 @@ class CandidateDetailSerializer(CandidateFileMixin, serializers.ModelSerializer)
             "id",
             "batch",
             "name",
+            "name_without_surname",
             "email",
             "whatsapp_number",
             "location",
@@ -314,6 +316,7 @@ class CandidateUpdateSerializer(serializers.ModelSerializer):
         fields = [
             # Personal info
             "name",
+            "name_without_surname",
             "email",
             "whatsapp_number",
             "location",
